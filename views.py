@@ -27,8 +27,43 @@ def criar():
     novo_jogo = Jogos(nome=nome, categoria=categoria, console=console)
     db.session.add(novo_jogo)
     db.session.commit()
+    flash(f'Jogo {nome} adicionado com sucesso!')
 
     return redirect(url_for('index'))
+
+@app.route('/editar/<int:id>')
+def editar(id):
+    if 'usuario_logado' not in session or session['usuario_logado'] == None:
+        return redirect(url_for('login', proxima=url_for('editar')))
+    jogo = Jogos.query.filter_by(id=id).first()
+    return render_template('editar.html', titulo='Editando Jogo', jogo=jogo)
+
+
+@app.route('/atualizar', methods=['POST'])
+def atualizar():
+    jogo = Jogos.query.filter_by(id=request.form['id']).first()
+    jogo.nome = request.form['nome']
+    jogo.categoria = request.form['categoria']
+    jogo.console = request.form['console']
+
+    db.session.add(jogo)
+    db.session.commit()
+    flash(f'Jogo {jogo.nome} atualizado com sucesso!')
+
+    return redirect(url_for('index'))
+
+@app.route('/deletar/<int:id>')
+def deletar(id):
+    if 'usuario_logado' not in session or session['usuario_logado'] == None:
+        return redirect(url_for('login'))
+
+    jogo = Jogos.query.filter_by(id=id).first()
+    Jogos.query.filter_by(id=id).delete()
+    db.session.commit()
+    flash(f'Jogo {jogo.nome} deletado com sucesso!')
+
+    return redirect(url_for('index'))
+
 
 @app.route('/login')
 def login():
@@ -41,7 +76,7 @@ def autenticar():
     if usuario:
         if request.form['senha'] == usuario.senha:
             session['usuario_logado'] = usuario.nickname
-            flash(usuario.nickname + ' logado com sucesso!')
+            flash(f'{usuario.nickname} logado com sucesso!')
             proxima_pagina = request.form['proxima']
             return redirect(proxima_pagina)
         else:
