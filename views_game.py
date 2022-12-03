@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, session, flash, url_for, send_from_directory
 from jogoteca import app, db
-from models import Jogos, Usuarios
-from helpers import recupera_imagem, deleta_arquivo, FormularioJogo, FormularioUsuario
+from models import Jogos
+from helpers import recupera_imagem, deleta_arquivo, FormularioJogo
 import time 
 
 @app.route("/")
@@ -47,7 +47,7 @@ def criar():
 @app.route('/editar/<int:id>')
 def editar(id):
     if 'usuario_logado' not in session or session['usuario_logado'] == None:
-        return redirect(url_for('login', proxima=url_for('editar')))
+        return redirect(url_for('login', proxima=url_for('editar', id=id)))
     jogo = Jogos.query.filter_by(id=id).first()
     form = FormularioJogo()
     form.nome.data = jogo.nome
@@ -89,34 +89,6 @@ def deletar(id):
     db.session.commit()
     flash(f'Jogo {jogo.nome} deletado com sucesso!')
 
-    return redirect(url_for('index'))
-
-
-@app.route('/login')
-def login():
-    proxima = request.args.get('proxima')
-    form = FormularioUsuario()
-    return render_template('login.html', proxima=proxima, form=form)
-
-@app.route('/autenticar', methods=['POST'])
-def autenticar():
-    form = FormularioUsuario(request.form)
-    usuario = Usuarios.query.filter_by(nickname=form.nickname.data).first()
-    if usuario:
-        if form.senha.data == usuario.senha:
-            session['usuario_logado'] = usuario.nickname
-            flash(f'{usuario.nickname} logado com sucesso!')
-            proxima_pagina = request.form['proxima']
-            return redirect(proxima_pagina)
-
-    else:
-        flash('usuário não logado')
-        return redirect(url_for('login'))
-
-@app.route('/logout')
-def logout():
-    session['usuario_logado'] = None
-    flash('Logout com sucesso!')
     return redirect(url_for('index'))
 
 @app.route('/uploads/<nome_arquivo>')
